@@ -2,7 +2,7 @@
 
 # Alibaba Scraper API
 
-Search Alibaba products, get volume pricing tiers, supplier verification, MOQs, and full product specs — all via a single API call. Real-time data, structured JSON. **5,000 free requests/month.**
+Search Alibaba products, get volume pricing tiers, supplier verification, MOQs, and full product specs — all via a single API call. Real-time data, structured JSON. **200 free requests/month.**
 
 ## Key Features
 
@@ -10,7 +10,7 @@ Search Alibaba products, get volume pricing tiers, supplier verification, MOQs, 
 - Get 30+ data points per product (volume pricing tiers, MOQ, supplier verification, variants, specs)
 - Full supplier profiles with Gold Supplier status, Trade Assurance, ratings, facility size
 - SKU variant groups with swatch images and combination mapping
-- **5,000 requests/month on free tier**
+- **200 requests/month on free tier**
 - Example Response:
 ```json
 {
@@ -39,7 +39,7 @@ Search Alibaba products, get volume pricing tiers, supplier verification, MOQs, 
 
 Create an account at [omkar.cloud](https://www.omkar.cloud/auth/sign-up?redirect=/api-key) to get your API key.
 
-It takes just 2 minutes to sign up. You get 5,000 free requests every month for detailed Alibaba data — more than enough for most users to get their job done without paying a dime.
+It takes just 2 minutes to sign up. You get 200 free requests every month for detailed Alibaba data.
 
 This is a well built product, and your search for the best Alibaba Scraper API ends right here.
 
@@ -415,10 +415,10 @@ Each product result includes supplier verification data: `is_gold_supplier`, `is
 
 | Plan | Price | Requests/Month |
 |------|-------|----------------|
-| Free | $0 | 5,000 |
-| Starter | $25 | 100,000 |
-| Grow | $75 | 1,000,000 |
-| Scale | $150 | 10,000,000 |
+| Free | $0 | 1,000 |
+| Starter | $16 | 1,600 |
+| Grow | $48 | 4,800 |
+| Scale | $148 | 14,800 |
 
 ## Questions? We have answers.
 
