@@ -1,5 +1,3 @@
-![Alibaba Scraper Featured Image](https://raw.githubusercontent.com/omkarcloud/alibaba-scraper/master/alibaba-scraper-featured-image.png)
-
 # Alibaba Scraper API
 
 Search Alibaba products, get volume pricing tiers, supplier verification, MOQs, and full product specs — all via a single API call. Real-time data, structured JSON. **200 free requests/month.**
@@ -34,6 +32,12 @@ Search Alibaba products, get volume pricing tiers, supplier verification, MOQs, 
     }
 }
 ```
+
+## ▶️ Video Tutorial
+
+Watch the complete API walkthrough:
+
+[![Alibaba Scraper API Walkthrough](https://raw.githubusercontent.com/omkarcloud/alibaba-scraper/master/alibaba-scraper-youtube-video-preview.png)](https://www.youtube.com/watch?v=pBqtu7rwpic)
 
 ## Get API Key
 
