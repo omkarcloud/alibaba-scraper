@@ -114,6 +114,12 @@ Need a bigger plan? Ask on [WhatsApp](https://api.whatsapp.com/send?phone=918178
 
 👉 [Start with Free Plan](https://www.omkar.cloud/auth/sign-up?redirect=/tools/alibaba-scraper/playground) — 1,000 free calls/month
 
+## Video Tutorial
+
+Prefer a walkthrough? Watch the complete API demo:
+
+[![Alibaba Scraper API Walkthrough](https://raw.githubusercontent.com/omkarcloud/alibaba-scraper/master/alibaba-scraper-youtube-video-preview.png)](https://www.youtube.com/watch?v=pBqtu7rwpic)
+
 ## 💬 Have Questions? We Have Answers.
 
 You're a developer — we know how hard completing a project can be. So we offer full support: just message us and we'll reply ✅ with a solution within 1 working day.
