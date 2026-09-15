@@ -1,433 +1,134 @@
-# Alibaba Scraper API
+# Alibaba Scraper
 
-Search Alibaba products, get volume pricing tiers, supplier verification, MOQs, and full product specs — all via a single API call. Real-time data, structured JSON. **200 free requests/month.**
+Alibaba Scraper gets you 🎯 accurate, 🔍 detailed Alibaba.com data as clean JSON in **Real-Time**.
 
-## Key Features
+No selectors, no proxies, no data cleaning. Just the data.
 
-- Search Alibaba products by keyword with pagination
-- Get 30+ data points per product (volume pricing tiers, MOQ, supplier verification, variants, specs)
-- Full supplier profiles with Gold Supplier status, Trade Assurance, ratings, facility size
-- SKU variant groups with swatch images and combination mapping
-- **200 requests/month on free tier**
-- Example Response:
-```json
-{
-    "product_id": "1601216646059",
-    "title": "E6s TWS Bluetooth 5.0 Earphone Best Gaming Headset Noise Cancelling Headphones Sports Waterproof TWS Earbuds",
-    "pricing": {
-        "range": "2.5-2.7",
-        "range_formatted": "$2.50-2.70",
-        "tiers": [
-            { "unit_price": "2.7", "formatted_price": "$2.70", "min_units": 20, "max_units": 499 },
-            { "unit_price": "2.5", "formatted_price": "$2.50", "min_units": 2000, "max_units": -1 }
-        ],
-        "minimum_order_qty": "20",
-        "minimum_order_label": "20 pieces"
-    },
-    "supplier": {
-        "name": "Shengdi (jieyang) Electronic Technology Co., Ltd.",
-        "is_gold_supplier": true,
-        "has_trade_assurance": true,
-        "country": "China"
-    }
-}
-```
+[**Try it now in the playground**](https://www.omkar.cloud/tools/alibaba-scraper/playground) - See the data quality for yourself in one click, **No sign-up required**.
 
-## ▶️ Video Tutorial
+**Build on it free:** 1,000 calls every month, no credit card ❤️
 
-Watch the complete API walkthrough:
+[![Alibaba Scraper API playground — run a live request in your browser, free, no sign-up](https://raw.githubusercontent.com/omkarcloud/alibaba-scraper/master/playground.png)](https://www.omkar.cloud/tools/alibaba-scraper/playground)
 
-[![Alibaba Scraper API Walkthrough](https://raw.githubusercontent.com/omkarcloud/alibaba-scraper/master/alibaba-scraper-youtube-video-preview.png)](https://www.youtube.com/watch?v=pBqtu7rwpic)
+## What can I get
 
-## Get API Key
+- 🔎 **Search millions of wholesale products** — 4.9M in Consumer Electronics alone; price, MOQ, orders & ratings
+- 📦 **Full product pages in one call** — volume pricing, SKU variants with stock, lead times & certifications
+- 🏭 **34K+ verified manufacturers** — years on Alibaba, factory size, response time, on-time rate & markets
+- 📸 **Reverse image search & real reviews** — find products from a photo; buyer reviews with photos
 
-Create an account at [omkar.cloud](https://www.omkar.cloud/auth/sign-up?redirect=/api-key) to get your API key.
+## Why Alibaba Scraper
 
-It takes just 2 minutes to sign up. You get 200 free requests every month for detailed Alibaba data.
+Most other Alibaba APIs fail you in one of four ways:
 
-This is a well built product, and your search for the best Alibaba Scraper API ends right here.
+- 🗄️ **Inaccurate, cached, stale data**
+- 🧩 **Low-detail endpoints** — a few fields per call, never the full picture
+- 💸 **Pay more to get the same data**
+- 🪦 **Works today, breaks next month** — nobody maintains it
 
+Alibaba Scraper is scraped live on every call, priced honestly, and actively maintained.
 
-## Quick Start
-
-```bash
-curl -X GET "https://alibaba-scraper.omkar.cloud/alibaba/products/search?search_query=wireless%20earbuds" \
-  -H "API-Key: YOUR_API_KEY"
-```
+## Example: A Full Alibaba Product
 
 ```json
 {
-    "count": 19899,
-    "per_page": 20,
-    "current_page": 1,
-    "total_pages": 995,
-    "next": "https://alibaba-scraper.omkar.cloud/alibaba/products/search?search_query=wireless+earbuds&page=2",
-    "previous": null,
-    "products": [
-        {
-            "product_id": "1601216646059",
-            "title": "E6s TWS Bluetooth 5.0 Earphone Best Gaming Headset Noise Cancelling Headphones Sports Waterproof TWS Earbuds",
-            "pricing": {
-                "range": "2.5-2.7",
-                "range_formatted": "$2.50-2.70"
-            },
-            "supplier": {
-                "name": "Shengdi (jieyang) Electronic Technology Co., Ltd.",
-                "is_gold_supplier": true,
-                "has_trade_assurance": true,
-                "country": "China"
-            }
-        }
-    ]
-}
-```
-
-## Quick Start (Python)
-
-```bash
-pip install requests
-```
-
-```python
-import requests
-
-# Search for products
-response = requests.get(
-    "https://alibaba-scraper.omkar.cloud/alibaba/products/search",
-    params={"search_query": "wireless earbuds"},
-    headers={"API-Key": "YOUR_API_KEY"}
-)
-
-print(response.json())
-```
-
-
-## API Reference
-
-### Search Products
-
-```
-GET https://alibaba-scraper.omkar.cloud/alibaba/products/search
-```
-
-#### Parameters
-
-| Parameter | Required | Default | Description |
-|-----------|----------|---------|-------------|
-| `search_query` | Yes | — | Keyword to search for products. |
-| `page` | No | `1` | Page number. |
-
-#### Example
-
-```python
-import requests
-
-response = requests.get(
-    "https://alibaba-scraper.omkar.cloud/alibaba/products/search",
-    params={"search_query": "wireless earbuds"},
-    headers={"API-Key": "YOUR_API_KEY"}
-)
-
-print(response.json())
-```
-
-#### Response
-
-<details>
-<summary>Sample Response (click to expand)</summary>
-
-```json
-{
-    "count": 19899,
-    "per_page": 20,
-    "current_page": 1,
-    "total_pages": 995,
-    "next": "https://alibaba-scraper.omkar.cloud/alibaba/products/search?search_query=wireless+earbuds&page=2",
-    "previous": null,
-    "products": [
-        {
-            "product_id": "1601216646059",
-            "title": "E6s TWS Bluetooth 5.0 Earphone Best Gaming Headset Noise Cancelling Headphones Sports Waterproof TWS Earbuds",
-            "url": "//www.alibaba.com/product-detail/_1601216646059.html",
-            "thumbnail": "//s.alicdn.com/@sc04/kf/H9884d49fc9a64f34bb9a2222ef978785i.jpg",
-            "gallery_images": [
-                "//s.alicdn.com/@sc04/kf/H9884d49fc9a64f34bb9a2222ef978785i.jpg",
-                "//s.alicdn.com/@sc04/kf/H12f818eafa1b4c31ab1106700ecdfdd0S.jpg",
-                "//s.alicdn.com/@sc04/kf/He0d97511701840bb825261341ed4c24aN.jpg",
-                "//s.alicdn.com/@sc04/kf/Hcb8a6e88979548eca529b7536df4dca1l.jpg",
-                "//s.alicdn.com/@sc04/kf/H43e22b66fbfe4ca797031d4b7755d595p.jpg",
-                "//s.alicdn.com/@sc04/kf/H6994b429941e4918b9593d120286b3515.jpg"
-            ],
-            "pricing": {
-                "range": "2.5-2.7",
-                "range_formatted": "$2.50-2.70",
-                "tiers": [
-                    {
-                        "unit_price": "2.7",
-                        "formatted_price": "$2.70",
-                        "min_units": 20,
-                        "max_units": 499,
-                        "unit_label": "pieces"
-                    },
-                    {
-                        "unit_price": "2.6",
-                        "formatted_price": "$2.60",
-                        "min_units": 500,
-                        "max_units": 1999,
-                        "unit_label": "pieces"
-                    },
-                    {
-                        "unit_price": "2.5",
-                        "formatted_price": "$2.50",
-                        "min_units": 2000,
-                        "max_units": -1,
-                        "unit_label": "pieces"
-                    }
-                ],
-                "minimum_order_qty": "20",
-                "minimum_order_unit": "piece",
-                "minimum_order_label": "20 pieces"
-            },
-            "seller": {
-                "shop_url": "//shengdidz.en.alibaba.com/",
-                "shop_logo": "//sc02.alicdn.com/kf/H307700620cf74d11bae7fe76c14ffa6bN.jpg",
-                "years_active": "3",
-                "ratings": [
-                    { "label": "Product as Described", "score": "4.3" },
-                    { "label": "Store Service", "score": "4.3" },
-                    { "label": "On time Shipping", "score": "4.4" },
-                    { "label": "Product Review", "score": "0.0" },
-                    { "label": "All Product Review", "score": "4.3" }
-                ]
-            },
-            "supplier": {
-                "name": "Shengdi (jieyang) Electronic Technology Co., Ltd.",
-                "id": 283124971,
-                "is_gold_supplier": true,
-                "is_assessed": true,
-                "is_verified": false,
-                "has_trade_assurance": true,
-                "facility_size": "1700",
-                "employee_count": "60",
-                "country": "China",
-                "country_code": "CN"
-            }
-        }
-    ]
-}
-```
-
-</details>
-
----
-
-### Product Details
-
-```
-GET https://alibaba-scraper.omkar.cloud/alibaba/products/details
-```
-
-#### Parameters
-
-| Parameter | Required | Default | Description |
-|-----------|----------|---------|-------------|
-| `product_id` | Yes | — | Alibaba product ID (e.g., `1601422779481`). |
-
-#### Example
-
-```python
-import requests
-
-response = requests.get(
-    "https://alibaba-scraper.omkar.cloud/alibaba/products/details",
-    params={"product_id": "1601422779481"},
-    headers={"API-Key": "YOUR_API_KEY"}
-)
-
-print(response.json())
-```
-
-#### Response Fields
-
-Returns 30+ fields including availability, title, gallery images, video, full specifications, description HTML, volume pricing tiers with MOQ, variant groups with swatch images, SKU combinations, seller ID, and full supplier profile.
-
-<details>
-<summary>Sample Response (click to expand)</summary>
-
-```json
-{
-    "product_id": "1601422779481",
-    "is_available": true,
-    "title": "Q93 Wireless AI Translator Earbuds Sports Life Waterproof and Noise Reducing Wireless Earbuds 5.4 IPX5 Waterproof Headphone",
-    "category_id": 201330216,
-    "url": "//www.alibaba.com/product-detail/_1601422779481.html",
-    "gallery_images": [
-        "//sc04.alicdn.com/kf/H307e2f578216401cb1aef67e5cd65b32b.jpg",
-        "//sc04.alicdn.com/kf/H241f861127a04758846586ab89673199a.jpg",
-        "//sc04.alicdn.com/kf/H35807851e0e245ab8f1f4b00a86fbb43H.jpg",
-        "//sc04.alicdn.com/kf/H6e4b352c16894e10b630347e7480f804d.jpg",
-        "//sc04.alicdn.com/kf/Ha16307582d2e455590d5747ff489a00af.jpg",
-        "//sc04.alicdn.com/kf/H13174faf3cd84fac823ac9cb8f7f28ffx.jpg"
+  "id": 1600371615858,
+  "title": "Custom 925 Sterling Silver Italy Link Chain Set Lobster Clasp Adjustable Snake Bone Sweater Chains Necklace",
+  "link": "https://www.alibaba.com/product-detail/_1600371615858.html",
+  "price": { "currency": "USD", "min": 4.72, "max": 24.47, "formatted": "$4.72-24.47", "unit": "piece" },
+  "moq": { "quantity": 1, "unit": "pieces" },
+  "sales": { "sold_count": 1102 },
+  "rating": { "average": 5.0, "review_count": 98 },
+  "variants": {
+    "attributes": [
+      { "id": 210192502, "name": "Design", "values": [{ "id": -1, "name": "Tile Chain(1.5mm)" }] },
+      { "id": 191288010, "name": "Color", "values": [{ "id": -13, "name": "18K Gold Plated" }] }
     ],
-    "video": null,
-    "specifications": {
-        "summary": "feature / Display Type / brand name / Product Type / function / private mold / Operating System / Material / place of origin / Language Support / Display Color",
-        "attributes": [
-            { "label": "feature", "value": "translator" },
-            { "label": "Display Type", "value": "Oled" },
-            { "label": "brand name", "value": "Somall" },
-            { "label": "Product Type", "value": "Translate Earbuds" },
-            { "label": "function", "value": "translator" },
-            { "label": "private mold", "value": "Yes" },
-            { "label": "Operating System", "value": "Symbian" },
-            { "label": "Material", "value": "ABS" },
-            { "label": "place of origin", "value": "Sichuan China" },
-            { "label": "Language Support", "value": "115" },
-            { "label": "Display Color", "value": "Black / White" }
-        ]
-    },
-    "pricing": {
-        "currency_symbol": "$",
-        "price_type": "volumePrice",
-        "tiers": [
-            {
-                "unit_price": 7.99,
-                "formatted_price": "$7.99",
-                "min_units": 2,
-                "max_units": 99,
-                "quantity_label": "2-99 sets"
-            },
-            {
-                "unit_price": 6.99,
-                "formatted_price": "$6.99",
-                "min_units": 100,
-                "max_units": 499,
-                "quantity_label": "100-499 sets"
-            },
-            {
-                "unit_price": 5.99,
-                "formatted_price": "$5.99",
-                "min_units": 500,
-                "max_units": 999,
-                "quantity_label": "500-999 sets"
-            },
-            {
-                "unit_price": 4.99,
-                "formatted_price": "$4.99",
-                "min_units": 1000,
-                "max_units": -1,
-                "quantity_label": "≥1000 sets"
-            }
-        ],
-        "minimum_order_qty": 2,
-        "minimum_order_unit": "sets",
-        "minimum_order_label": "2 sets",
-        "unit_singular": "set",
-        "unit_plural": "sets"
-    },
-    "variants": {
-        "groups": [
-            {
-                "attribute_name": "model number",
-                "options": [
-                    { "option_id": "3:-3", "label": "Q93" }
-                ]
-            },
-            {
-                "attribute_name": "color",
-                "options": [
-                    {
-                        "option_id": "191288010:3331185",
-                        "label": "White",
-                        "swatch_image": "//sc04.alicdn.com/kf/Hc0d61ed2bfcd43fb82f0d3487b70e943V.jpg"
-                    },
-                    {
-                        "option_id": "191288010:3327837",
-                        "label": "Black",
-                        "swatch_image": "//sc04.alicdn.com/kf/H8a5b2b4cb9ea4af2bdfeae9b08c16cdek.jpg"
-                    }
-                ]
-            }
-        ],
-        "combinations": [
-            { "sku_id": 106577366684, "attribute_map": "3:-3;191288010:3331185" },
-            { "sku_id": 106577366685, "attribute_map": "3:-3;191288010:3327837" }
-        ]
-    },
-    "seller_id": 267514978,
-    "supplier": {
-        "name": "Sichuan Shenmai Technology Co., Ltd.",
-        "id": 274605092,
-        "business_type": "Trading Company",
-        "employee_count": null,
-        "transaction_volume": "US$ 30,000+",
-        "contact_person": "jenny jenyy"
-    }
+    "skus": [{ "id": 109598013764, "price": 13.36, "formatted": "$13.36", "stock": 5000 }]
+  },
+  "lead_time": [{ "min_quantity": 1, "max_quantity": 2, "days": 7 }],
+  "packaging": { "unit_size": "14X6X9", "unit_weight_kg": 0.005 },
+  "inventory": { "ships_from": [{ "id": "CN", "name": "China" }], "total_stock": 559909 },
+  "key_attributes": [{ "name": "Jewelry Main Material", "value": "925 SILVER" }],
+  "supplier": {
+    "name": "Haifeng County Meilong Liming Jewelry Processing Factory",
+    "link": "https://limingsilver.en.alibaba.com/",
+    "years_on_alibaba": 9,
+    "response_time": "≤3h",
+    "on_time_delivery_rate": 90.9,
+    "rating": { "average": 4.8, "review_count": 80 },
+    "transactions": { "half_year_order_amount": "120,000+", "half_year_order_count": 320 },
+    "trade_assurance_amount": "154,000"
+  },
+  "is_trade_assurance": true,
+  "is_customizable": true
 }
 ```
 
-</details>
+*Trimmed for readability.*
 
-## Error Handling
+## Get Started with 1,000 Free Calls
 
-```python
-response = requests.get(
-    "https://alibaba-scraper.omkar.cloud/alibaba/products/search",
-    params={"search_query": "wireless earbuds"},
-    headers={"API-Key": "YOUR_API_KEY"}
-)
+Start in the [playground](https://www.omkar.cloud/tools/alibaba-scraper/playground) — try any endpoint with one click, no sign-up required.
 
-if response.status_code == 200:
-    data = response.json()
-elif response.status_code == 401:
-    # Invalid API key
-    pass
-elif response.status_code == 429:
-    # Rate limit exceeded
-    pass
-```
+Once you're happy with the data, start with the free plan for 1,000 free calls every month:
 
-## FAQs
+1. [Sign up on Omkar Cloud](https://www.omkar.cloud/auth/sign-up?redirect=/tools/alibaba-scraper/playground) — free, no credit card.
+2. Open the [Alibaba Scraper playground](https://www.omkar.cloud/tools/alibaba-scraper/playground) and enter any product you like. Click **Get Live Data**.
+3. Enjoy your data 😎.
 
-### What data does the API return?
+## Endpoints
 
-**Search Products** returns title, product URL, thumbnail, gallery images, volume pricing with range and tier breakdowns, MOQ, seller info (shop URL, logo, years active, ratings), and supplier info (company name, Gold Supplier status, Trade Assurance, facility size, employee count, country).
+12 endpoints cover everything you need.
 
-**Product Details** returns 30+ fields — availability, title, category ID, full gallery images, video, all product specifications, description HTML with images, volume pricing with currency and tier breakdowns, variant groups (color, size, material) with swatch images, SKU combinations, seller ID, and full supplier profile (business type, transaction volume, contact person).
+| Endpoint | Path | Returns |
+|---|---|---|
+| Product Details | `/products/details` | Everything about one product in a single call |
+| Search Products | `/products/search` | 48 products per page, 16 filters to narrow them |
+| Products By Category | `/products/by-category` | A whole category, browsable with the same filters |
+| Search By Image | `/products/search-by-image` | Matching products from any photo URL |
+| Product Reviews | `/products/reviews` | Buyer reviews with photos, translations & replies |
+| Autocomplete | `/autocomplete` | Keyword suggestions straight from the search bar |
+| Categories | `/categories` | The whole category tree, IDs included |
+| Trending Keywords | `/trending-keywords` | What buyers are searching for right now |
+| Search Suppliers | `/suppliers/search` | 20 manufacturers per page with trust signals |
+| Supplier Details | `/suppliers/details` | A full company profile and its verification |
+| Supplier Products | `/suppliers/products` | Everything one supplier sells, 16 per page |
+| Supplier Reviews | `/suppliers/reviews` | Every review across a supplier's whole catalog |
 
-All in structured JSON. Ready to use in your app.
+## Pricing
 
-### How accurate is the data?
+High value, Low price.
 
-Data is pulled from Alibaba in real time. Every API call fetches live data — not cached or stale results. Prices, availability, supplier info, and variants reflect what's on Alibaba.com right now.
+| Plan | Price | Calls / month | Per 1,000 |
+|---|---|---|---|
+| **Basic** | **Free** | **1,000** — the most generous free plan | $0 |
+| **Pro** | $16/mo | 20,000 | $0.80 |
+| **Ultra** | $48/mo | 100,000 | $0.48 |
+| **Mega** | $148/mo | 400,000 | $0.37 |
 
-### How do I get a product ID?
+Need a bigger plan? Ask on [WhatsApp](https://api.whatsapp.com/send?phone=918178804274&text=I%20need%20a%20custom%20plan%20for%20the%20Alibaba%20Scraper%20API.) or [Email](mailto:happy.to.help@omkar.cloud?subject=Custom%20plan%20for%20Alibaba%20Scraper%20API&body=I%20need%20a%20custom%20plan%20for%20the%20Alibaba%20Scraper%20API.).
 
-Every Alibaba product URL contains the product ID. For example, in `https://www.alibaba.com/product-detail/_1601422779481.html`, the product ID is `1601422779481`.
+- [**90 Day 2 Click Refund Guarantee**](https://www.omkar.cloud/refund-process)
+- This is an excellent API made by Omkar Cloud, which is Rated Excellent — [4.7 based on 30 reviews on Trustpilot](https://www.trustpilot.com/review/omkar.cloud).
 
-You can also get product IDs from the Search Products endpoint — each result includes a `product_id` field.
+👉 [Start with Free Plan](https://www.omkar.cloud/auth/sign-up?redirect=/tools/alibaba-scraper/playground) — 1,000 free calls/month
 
-### Can I get MOQ and volume pricing?
+## 💬 Have Questions? We Have Answers.
 
-Yes. Both endpoints return full pricing details. Search results include the price range and all volume tiers with min/max quantity breakdowns. Product Details adds the exact MOQ, currency, and per-unit labels. Ideal for building sourcing tools where buyers compare pricing across quantities.
+You're a developer — we know how hard completing a project can be. So we offer full support: just message us and we'll reply ✅ with a solution within 1 working day.
 
-### How do I identify verified suppliers?
+[![Message Us on WhatsApp about Alibaba Scraper](https://raw.githubusercontent.com/omkarcloud/assets/master/images/whatsapp-us.png)](https://api.whatsapp.com/send?phone=918178804274&text=I%20need%20help%20using%20the%20Alibaba%20Scraper%20API.)
 
-Each product result includes supplier verification data: `is_gold_supplier`, `is_assessed`, `is_verified`, and `has_trade_assurance`. Filter on these flags to surface only Trade Assurance-protected or Gold-certified suppliers in your app.
+[![Ask Us by Email about Alibaba Scraper](https://raw.githubusercontent.com/omkarcloud/assets/master/images/ask-on-email.png)](mailto:happy.to.help@omkar.cloud?subject=Help%20with%20Alibaba%20Scraper%20API&body=I%20need%20help%20using%20the%20Alibaba%20Scraper%20API.)
 
-## Rate Limits
+## Popular Scrapers by Omkar Cloud
 
-| Plan | Price | Requests/Month |
-|------|-------|----------------|
-| Free | $0 | 1,000 |
-| Starter | $16 | 1,600 |
-| Grow | $48 | 4,800 |
-| Scale | $148 | 14,800 |
+- [**Google Maps Scraper (3,100+ GitHub Stars)**](https://github.com/omkarcloud/google-maps-scraper) — type "dentists in New York", get every business as a ready-to-call lead list: phones, emails, websites & reviews. Up to 100K free leads/month.
+- [**AliExpress Scraper**](https://www.omkar.cloud/tools/aliexpress-scraper) — live product details, SKU variants, stock & shipping
+- [**G2 Scraper**](https://www.omkar.cloud/tools/g2-scraper) — G2 product details, ratings & AI-found contacts
+- [**Website Email Contact Scraper**](https://www.omkar.cloud/tools/website-email-contact-scraper) — emails, phones & socials from any website
+- [**Booking Scraper**](https://www.omkar.cloud/tools/booking-scraper) — Booking.com hotels: prices, ratings, rooms & amenities
+- [**Etsy Scraper**](https://www.omkar.cloud/tools/etsy-scraper) — Etsy products: prices, discounts, shops & variations
 
-## Questions? We have answers.
-
-Reach out anytime. We will solve your query within 1 working day.
-
-[![Contact Us on WhatsApp about Alibaba Scraper](https://raw.githubusercontent.com/omkarcloud/assets/master/images/whatsapp-us.png)](https://api.whatsapp.com/send?phone=918178804274&text=I%20have%20a%20question%20about%20the%20Alibaba%20Scraper%20API.)
-
-[![Contact Us on Email about Alibaba Scraper](https://raw.githubusercontent.com/omkarcloud/assets/master/images/ask-on-email.png)](mailto:happy.to.help@omkar.cloud?subject=Alibaba%20Scraper%20API%20Question)
+👉 [Start with Free Plan](https://www.omkar.cloud/auth/sign-up?redirect=/tools/alibaba-scraper/playground) — 1,000 free calls/month
