@@ -251,7 +251,13 @@ def test_route_pagination_links(monkeypatch):
            "SERVER_NAME": "localhost", "SERVER_PORT": "80", "wsgi.input": BytesIO(b""), "wsgi.errors": sys.stderr,
            "wsgi.url_scheme": "http", "wsgi.version": (1, 0), "wsgi.multithread": False, "wsgi.multiprocess": False, "wsgi.run_once": False}
     status = {}
-    body = b"".join(app(env, lambda s, h: status.update(status=s)))
+
+    # bottle 0.12 calls start_response with 2 args, 0.13 always passes a
+    # third (exc_info, usually None) — accept both.
+    def start_response(code, headers, exc_info=None):
+        status.update(status=code)
+
+    body = b"".join(app(env, start_response))
     assert status["status"].startswith("200")
     out = json.loads(body)
     assert list(out)[:6] == ["count", "per_page", "current_page", "total_pages", "next", "previous"]
@@ -266,7 +272,7 @@ def test_route_pagination_links(monkeypatch):
         if key.startswith("bottle."):
             del env2[key]
     status = {}
-    body = b"".join(app(env2, lambda s, h: status.update(status=s)))
+    body = b"".join(app(env2, start_response))
     assert status["status"].startswith("400") and json.loads(body)["errors"]["page"]
 
 
