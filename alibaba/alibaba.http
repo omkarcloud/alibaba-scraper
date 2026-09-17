@@ -1,0 +1,53 @@
+@baseUrl = http://127.0.0.1:6002
+# @baseUrl = https://alibaba-scraper.omkar.cloud
+
+# Every value below returned a 200 with data on 2026-09-14 (local service).
+# derive_facts.py reads the FIRST request per path as the proven example.
+
+### Search Products
+GET {{baseUrl}}/alibaba/products/search?query=raspberry%20pi&page=1
+
+### Search Products (filters + currency)
+GET {{baseUrl}}/alibaba/products/search?query=usb%20hub&min_price=1&max_price=20&trade_assurance=true&sort_by=orders&currency=USD&supplier_country=CN&product_certifications=CE
+
+### Products By Category
+GET {{baseUrl}}/alibaba/products/by-category?category=518&page=1
+
+### Search By Image (photo URL)
+GET {{baseUrl}}/alibaba/products/search-by-image?image=https://sc04.alicdn.com/kf/Hf17a19bce0e643dd9bcdf437907e448fP.jpg
+
+### Search By Image (reuse a previous image_path, no re-upload)
+GET {{baseUrl}}/alibaba/products/search-by-image?image=/icbuimgsearch/skdd2qccgi.jpg&page=2
+
+### Product Details
+GET {{baseUrl}}/alibaba/products/details?product=1601302079515
+
+### Product Details (link + currency)
+GET {{baseUrl}}/alibaba/products/details?product=https://www.alibaba.com/product-detail/x_1601302079515.html&currency=USD
+
+### Product Reviews
+GET {{baseUrl}}/alibaba/products/reviews?product=1601302079515&page=1
+
+### Search Suppliers
+GET {{baseUrl}}/alibaba/suppliers/search?query=bluetooth%20speaker&page=1
+
+### Supplier Details
+GET {{baseUrl}}/alibaba/suppliers/details?supplier=eptusbchina
+
+### Supplier Products
+GET {{baseUrl}}/alibaba/suppliers/products?supplier=eptusbchina&page=1
+
+### Supplier Reviews
+GET {{baseUrl}}/alibaba/suppliers/reviews?supplier=eptusbchina&page=1
+
+### Autocomplete
+GET {{baseUrl}}/alibaba/autocomplete?query=blue
+
+### Trending Keywords
+GET {{baseUrl}}/alibaba/trending-keywords
+
+### Categories
+GET {{baseUrl}}/alibaba/categories
+
+### Categories (children)
+GET {{baseUrl}}/alibaba/categories?parent=44
