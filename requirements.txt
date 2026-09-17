@@ -1,0 +1,6 @@
+bottle
+cheroot
+marshmallow
+curl_cffi
+requests
+patchright
