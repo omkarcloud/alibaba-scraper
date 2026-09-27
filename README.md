@@ -56,8 +56,8 @@ All 12 endpoints are now live at `http://localhost:8000`.
 
 The same API is published on RapidAPI, and its playground is the easiest place to try parameters and see raw responses. Once a request looks right, run it locally.
 
-1. [Subscribe to the free plan](https://rapidapi.com/Chetan11dev/api/best-alibaba-scraper-free-1000-calls/pricing) — 1,000 calls/month, no credit card.
-2. [Try the endpoints in the playground](https://rapidapi.com/Chetan11dev/api/best-alibaba-scraper-free-1000-calls/playground/apiendpoint_1382cd86-3635-43c9-9881-97dd0b06ebcf) — every param is pre-filled, so you see real data in one click.
+1. [Subscribe to the free plan](https://rapidapi.com/OmkarCloud/api/best-alibaba-scraper-free-1000-calls/pricing) — 1,000 calls/month, no credit card.
+2. [Try the endpoints in the playground](https://rapidapi.com/OmkarCloud/api/best-alibaba-scraper-free-1000-calls/playground/apiendpoint_1382cd86-3635-43c9-9881-97dd0b06ebcf) — every param is pre-filled, so you see real data in one click.
 3. Copy the generated code and replace `https://best-alibaba-scraper-free-1000-calls.p.rapidapi.com` with `http://localhost:8000`. It now runs against your local API.
 
 ```python
@@ -121,7 +121,7 @@ Message us anytime and we'll solve your query within 1 working day — you talk 
 
 ## Love It? [Star It ⭐!](https://github.com/omkarcloud/alibaba-scraper)
 
-Star the repo ⭐ and become a star hero!
+Star the repo ⭐ and become my star hero!
 
 It's just 1 click, but it means the world to me.
 
