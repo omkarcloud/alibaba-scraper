@@ -4,3 +4,4 @@ marshmallow
 curl_cffi
 requests
 patchright
+Pillow

@@ -21,7 +21,7 @@ from alibaba.fetch import (  # noqa: E402
     BASE, OPEN_S, AlibabaNotFound, AlibabaUpstreamError, build_url, ensure_site_cookies,
     extract_blob, fetch_gated_page, fetch_json, fetch_page,
 )
-from alibaba.refs import resolve_image_ref  # noqa: E402
+from alibaba.refs import is_uploaded_image, resolve_image_ref  # noqa: E402
 
 MAX_PAGE = parsers.SEARCH_MAX_PAGES
 
@@ -137,32 +137,40 @@ def search_suppliers(query, page=1, supplier_country=None, verified_supplier=Non
     return result
 
 
-# ---- image search (open-s image path + gated result page) ------------------
+# ---- image search (site upload + open-s result list) -----------------------
 
-OSS_POLICY_URL = (f"{OPEN_S}/ossUploadSecretKeyDataService"
-                  "?appKey=a5m1ismomeptugvfmkkjnwwqnwyrhpb1&appName=magellan")
+# The search bar's own upload since ~2026-10-27 (s.alicdn.com
+# pc-home-2022/js/fy25headersearchproduct.js): the photo is drawn on a canvas
+# whose longer side is 500 px, exported as a JPEG q0.8 data URL and POSTed as
+# `pictureBase`; the answer is {"success": true, "model": {"imagePath":
+# "https://icbu-picture.oss-us-west-1.aliyuncs.com/icbuimgsearch/imageBase64_<id>.jpeg",
+# "regions": [...]}}. A plain form POST works and needs no cookies
+# (validated 2026-10-30). The bucket follows the uploader's IP (a US exit
+# gets icbu-picture.oss-us-west-1, an Indian one icbu-picture-sh.oss-cn-
+# shanghai), and the result list only finds a non-US upload by its full URL,
+# so `image_path` is the full URL. The old route — a signed OSS POST policy
+# from open-s ossUploadSecretKeyDataService — answers {"enable": false} on
+# every exit since then.
+UPLOAD_URL = f"{BASE}/search/api/imageTextSearchRegions"
+UPLOAD_SIDE = 500
 IMAGE_MAX_BYTES = 8 * 1024 * 1024
 IMAGE_TIMEOUT = 30
 
 
 def _upload_image(image_url):
-    """Download the caller's image and put it where the site's own image
-    search expects it: the open-s gateway hands out a short-lived signed OSS
-    POST policy (the same call the search bar makes), the image goes to that
-    bucket, and the returned key is the imageAddress /picture/search.htm
-    renders. (The URL-registration gateway only accepts alicdn-hosted images,
-    so external URLs must take this route.)"""
-    import random
-    import string
+    """Download the caller's image and upload it the way the site's search
+    bar does (see UPLOAD_URL); returns the full OSS URL the result list takes
+    as imageAddress."""
+    import base64
+    import io
 
-    import requests as plain_requests
+    from PIL import Image
 
-    from alibaba.fetch import IMPERSONATE, JSON_HEADERS, PAGE_TIMEOUT
+    from alibaba.fetch import IMPERSONATE
 
     from curl_cffi import requests as curl_requests
     # Ask for JPEG/PNG explicitly: CDNs that content-negotiate (alicdn) answer
-    # `image/*` with AVIF, and an AVIF upload makes the site's image index
-    # return unrelated products (validated 2026-09-14).
+    # `image/*` with AVIF, which Pillow cannot decode (validated 2026-09-14).
     try:
         resp = curl_requests.get(image_url, impersonate=IMPERSONATE, timeout=IMAGE_TIMEOUT,
                                  headers={"accept": "image/jpeg,image/png;q=0.9,*/*;q=0.5"},
@@ -178,23 +186,25 @@ def _upload_image(image_url):
                          f"(got HTTP {resp.status_code}, {len(body)} bytes, {ctype or 'no content-type'})")
     if len(body) > IMAGE_MAX_BYTES:
         raise ValueError("image is larger than 8 MB")
-    policy = fetch_json(OSS_POLICY_URL)
-    p = policy.get("data") if isinstance(policy, dict) else None
-    if not p or not p.get("host") or not p.get("policy"):
-        raise AlibabaUpstreamError("image upload policy unavailable")
-    ext = "png" if body[:4] == b"\x89PNG" else "jpg"
-    key = f"{str(p.get('imagePath') or 'icbuimgsearch').strip('/')}/" \
-          f"{''.join(random.choices(string.ascii_lowercase + string.digits, k=10))}.{ext}"
-    form = {"success_action_status": "200", "name": f"photo.{ext}", "policy": p["policy"],
-            "key": key, "signature": p.get("signature"), "OSSAccessKeyId": p.get("accessid")}
     try:
-        up = plain_requests.post(p["host"], data=form, timeout=PAGE_TIMEOUT,
-                                 files={"file": (f"photo.{ext}", body, f"image/{'png' if ext == 'png' else 'jpeg'}")})
-    except Exception as e:
-        raise AlibabaUpstreamError(f"image upload failed: {type(e).__name__}: {e}")
-    if up.status_code not in (200, 204):
-        raise AlibabaUpstreamError(f"image upload rejected (HTTP {up.status_code})")
-    return "/" + key
+        im = Image.open(io.BytesIO(body))
+        im.load()
+    except Exception:
+        raise ValueError("image_url must be a JPEG/PNG/WEBP image (it could not be decoded)")
+    # same canvas as the site: white background (transparent PNGs), longer side 500 px
+    canvas = Image.new("RGB", im.size, "white")
+    im = im.convert("RGBA")
+    canvas.paste(im, mask=im.split()[-1])
+    canvas.thumbnail((UPLOAD_SIDE, UPLOAD_SIDE))
+    buf = io.BytesIO()
+    canvas.save(buf, "JPEG", quality=80)
+    data_url = "data:image/jpeg;base64," + base64.b64encode(buf.getvalue()).decode()
+    payload = fetch_json(UPLOAD_URL, data={"pictureBase": data_url})
+    model = payload.get("model") if isinstance(payload, dict) else None
+    image_path = (model or {}).get("imagePath") or ""
+    if not payload.get("success") or not is_uploaded_image(image_path):
+        raise AlibabaUpstreamError(f"image upload rejected: {str(payload)[:200]}")
+    return image_path
 
 
 IMAGE_PAGE_SIZE = 20
@@ -204,23 +214,24 @@ _REGION_RE = re.compile(r"\d+,\d+,\d+,\d+")
 
 def search_by_image(image, page=1, category_id=None, region=None):
     """Reverse image search over plain curl_cffi: upload the image the way
-    the site's search bar does (signed OSS policy from open-s), then page the
+    the site's search bar does (UPLOAD_URL, since 2026-10-30), then page the
     matches through the open-s imageSearchViewService gateway — the same JSON
-    call the result page's list makes (validated 2026-09-14: 20 offers/page,
-    category facets, detected crop regions; no browser, no cookies).
+    call the result page's list makes (20 offers/page, category facets,
+    detected crop regions; no browser).
 
     ONE param for the image (house style — never a url/id pair): `image` is
     either a public http(s) photo link, which gets uploaded, or the
-    `image_path` a previous response returned, which skips the upload when
-    paging or re-cropping the same photo."""
+    `image_path` a previous response returned (the uploaded photo's OSS URL;
+    the older `/icbuimgsearch/...` path form too), which skips the upload
+    when paging or re-cropping the same photo."""
     page = int(page or 1)
     if not 1 <= page <= IMAGE_MAX_PAGE:
         raise ValueError(f"page must be 1-{IMAGE_MAX_PAGE}")
     if region is not None and not _REGION_RE.fullmatch(str(region)):
-        raise ValueError("region must be 'x,y,width,height' pixel coordinates of the uploaded image "
+        raise ValueError("region must be 'x1,x2,y1,y2' pixel coordinates of the uploaded image "
                          "(the response's `regions` lists the detected ones)")
     image_path = resolve_image_ref(str(image or ""))
-    if not image_path.startswith("/"):
+    if not is_uploaded_image(image_path):
         image_path = _upload_image(image_path)
     params = {
         "pageSize": IMAGE_PAGE_SIZE, "beginPage": page, "imageType": "oss",

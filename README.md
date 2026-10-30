@@ -8,7 +8,7 @@ Alibaba Scraper turns any Alibaba.com page into structured JSON — 12 endpoints
 
 Perfect for **product research, price monitoring, dropshipping and supplier sourcing**. Free forever, unlimited requests, runs on your machine.
 
-- **Rated Excellent — 4.7 based on 33 reviews** on [Trustpilot](https://www.trustpilot.com/review/omkar.cloud). Our open source work is sponsored by [1000+ devs on GitHub](https://github.com/sponsors/omkarcloud).
+- **Rated Excellent — 4.7 based on 37 reviews** on [Trustpilot](https://www.trustpilot.com/review/omkar.cloud). Our open source work is sponsored by [1000+ devs on GitHub](https://github.com/sponsors/omkarcloud).
 
 ## 🚀 Unlimited Free Alibaba Data — Run It in 60 Seconds
 

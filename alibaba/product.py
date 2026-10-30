@@ -1,7 +1,7 @@
 """Product details and product reviews.
 
-    python alibaba/product.py 1601302079515
-    python alibaba/product.py https://www.alibaba.com/product-detail/x_1601302079515.html --reviews 2
+    python alibaba/product.py 1600371615858
+    python alibaba/product.py https://www.alibaba.com/product-detail/x_1600381882725.html --reviews 2
 """
 import os
 import sys
@@ -74,7 +74,7 @@ def product_reviews(product, page=1, page_size=REVIEWS_PAGE_SIZE, company_id=Non
 
 if __name__ == "__main__":
     import json
-    args = sys.argv[1:] or ["1601302079515"]
+    args = sys.argv[1:] or ["1600371615858"]
     if "--reviews" in args:
         i = args.index("--reviews")
         out = product_reviews(args[0], page=int(args[i + 1]) if len(args) > i + 1 else 1)

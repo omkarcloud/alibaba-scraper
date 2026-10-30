@@ -48,7 +48,8 @@ class SupplierOrCompanyIdField(RefField):
 
 
 class RegionField(StrippedString):
-    """Crop box 'x,y,width,height' in pixels of the uploaded image."""
+    """Crop box 'x1,x2,y1,y2' in pixels of the uploaded image (one of the
+    response's `regions`, or your own)."""
 
     def _deserialize(self, value, attr, data, **kwargs):
         value = super()._deserialize(value, attr, data, **kwargs)
@@ -57,7 +58,7 @@ class RegionField(StrippedString):
         value = value.replace(" ", "")
         parts = value.split(",")
         if len(parts) != 4 or not all(p.isdigit() for p in parts):
-            raise ValidationError("Must be 'x,y,width,height' pixel coordinates.")
+            raise ValidationError("Must be 'x1,x2,y1,y2' pixel coordinates.")
         return value
 
 

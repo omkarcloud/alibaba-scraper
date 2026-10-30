@@ -1,7 +1,7 @@
 @baseUrl = http://127.0.0.1:6002
 # @baseUrl = https://alibaba-scraper.omkar.cloud
 
-# Every value below returned a 200 with data on 2026-09-14 (local service).
+# Every value below returned a 200 with data on 2026-10-30 (local service).
 # derive_facts.py reads the FIRST request per path as the proven example.
 
 ### Search Products
@@ -17,16 +17,16 @@ GET {{baseUrl}}/alibaba/products/by-category?category=518&page=1
 GET {{baseUrl}}/alibaba/products/search-by-image?image=https://sc04.alicdn.com/kf/Hf17a19bce0e643dd9bcdf437907e448fP.jpg
 
 ### Search By Image (reuse a previous image_path, no re-upload)
-GET {{baseUrl}}/alibaba/products/search-by-image?image=/icbuimgsearch/skdd2qccgi.jpg&page=2
+GET {{baseUrl}}/alibaba/products/search-by-image?image=https://icbu-picture.oss-us-west-1.aliyuncs.com/icbuimgsearch/imageBase64_c74f859365d846cbaa37beb7fae502ca.jpeg&page=2
 
 ### Product Details
-GET {{baseUrl}}/alibaba/products/details?product=1601302079515
+GET {{baseUrl}}/alibaba/products/details?product=1600371615858
 
 ### Product Details (link + currency)
-GET {{baseUrl}}/alibaba/products/details?product=https://www.alibaba.com/product-detail/x_1601302079515.html&currency=USD
+GET {{baseUrl}}/alibaba/products/details?product=https://www.alibaba.com/product-detail/x_1600371615858.html&currency=USD
 
 ### Product Reviews
-GET {{baseUrl}}/alibaba/products/reviews?product=1601302079515&page=1
+GET {{baseUrl}}/alibaba/products/reviews?product=1600381882725&page=1
 
 ### Search Suppliers
 GET {{baseUrl}}/alibaba/suppliers/search?query=bluetooth%20speaker&page=1

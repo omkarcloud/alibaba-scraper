@@ -477,6 +477,21 @@ def parse_search_page(blob, page, currency=None):
 IMAGE_PAGE_SIZE = 20
 
 
+def _region(value):
+    """'x1,x2,y1,y2' with negative coordinates clamped to 0: the detector
+    sometimes answers '-1,498,172,500', which the `region` param (and the
+    site's own crop) refuse when it is passed back."""
+    if not value:
+        return value
+    parts = value.split(",")
+    if len(parts) != 4:
+        return value
+    try:
+        return ",".join(str(max(0, int(x))) for x in parts)
+    except ValueError:
+        return value
+
+
 def parse_image_search_page(data, page):
     """open-s imageSearchViewService `data` -> same card shape as a keyword
     search plus the detected crop regions and the category facet. The
@@ -504,8 +519,8 @@ def parse_image_search_page(data, page):
         "count": len(results),
         "results": results,
         "input_image": _link(data.get("originalImageUrl")),
-        "regions": [r for r in (data.get("regions") or []) if isinstance(r, str) and r],
-        "selected_region": _text(data.get("selectRegion")),
+        "regions": [_region(r) for r in (data.get("regions") or []) if isinstance(r, str) and r],
+        "selected_region": _region(_text(data.get("selectRegion"))),
         "filters": {"categories": cats},
     }
 

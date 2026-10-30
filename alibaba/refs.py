@@ -107,18 +107,27 @@ def resolve_category_ref(value):
 
 
 _IMAGE_PATH_RE = re.compile(r"^/icbuimgsearch/[A-Za-z0-9._-]+$")
+# where the site's image upload stores the photo (the bucket follows the
+# uploader's region: icbu-picture.oss-us-west-1, icbu-picture-sh.oss-cn-shanghai, ...)
+_IMAGE_OSS_RE = re.compile(r"^https://icbu-picture[a-z0-9-]*\.oss-[a-z0-9-]+\.aliyuncs\.com/icbuimgsearch/[A-Za-z0-9._-]+$")
+
+
+def is_uploaded_image(value):
+    """True for an image_path a previous response returned: the uploaded
+    photo's OSS URL, or the older `/icbuimgsearch/...` path form."""
+    return bool(_IMAGE_PATH_RE.match(value or "") or _IMAGE_OSS_RE.match(value or ""))
 
 
 def resolve_image_ref(value):
     """photo URL | image_path from a previous response -> the value as-is.
 
-    Returns an `/icbuimgsearch/...` path unchanged (the caller reuses the
-    already-uploaded photo) or a public http(s) URL unchanged (the caller
-    uploads it). ONE param for both forms, like the other resolvers."""
+    An image_path (is_uploaded_image) is reused as-is; any other public
+    http(s) URL is returned unchanged for the caller to upload. ONE param
+    for both forms, like the other resolvers."""
     value = (value or "").strip()
     if not value:
         raise ValueError("image is required")
-    if _IMAGE_PATH_RE.match(value):
+    if is_uploaded_image(value):
         return value
     if value.lower().startswith(("http://", "https://")):
         return value
