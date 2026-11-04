@@ -115,9 +115,9 @@ Every `product`, `supplier`, `category` and `image` param takes **either an ID o
 
 Message us anytime and we'll solve your query within 1 working day — you talk to the engineers who built the scraper, not a support script.
 
-[![Contact Us on WhatsApp about Alibaba Scraper](https://raw.githubusercontent.com/omkarcloud/assets/master/images/whatsapp-us.png)](https://api.whatsapp.com/send?phone=918178804274&text=I%20have%20a%20question%20about%20the%20Alibaba%20Scraper.)
+[![Contact Us on WhatsApp about Alibaba Scraper](https://raw.githubusercontent.com/omkarcloud/assets/master/images/whatsapp-us.png)](https://www.omkar.cloud/l/alibaba-scraper-github-whatsapp)
 
-[![Email Us about Alibaba Scraper](https://raw.githubusercontent.com/omkarcloud/assets/master/images/ask-on-email.png)](mailto:happy.to.help@omkar.cloud?subject=Alibaba%20Scraper%20Question)
+[![Email Us about Alibaba Scraper](https://raw.githubusercontent.com/omkarcloud/assets/master/images/ask-on-email.png)](https://www.omkar.cloud/l/alibaba-scraper-github-email)
 
 ## Love It? [Star It ⭐!](https://github.com/omkarcloud/alibaba-scraper)
 
