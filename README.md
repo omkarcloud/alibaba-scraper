@@ -117,7 +117,7 @@ Message us anytime and we'll solve your query within 1 working day — you talk 
 
 [![Contact Us on WhatsApp about Alibaba Scraper](https://raw.githubusercontent.com/omkarcloud/assets/master/images/whatsapp-us.png)](https://www.omkar.cloud/l/alibaba-scraper-github-whatsapp)
 
-[![Email Us about Alibaba Scraper](https://raw.githubusercontent.com/omkarcloud/assets/master/images/ask-on-email.png)](https://www.omkar.cloud/l/alibaba-scraper-github-email)
+[![Email Us about Alibaba Scraper](https://raw.githubusercontent.com/omkarcloud/assets/master/images/ask-on-email.png)](mailto:happy.to.help@omkar.cloud?subject=Alibaba%20Scraper%20Question)
 
 ## Love It? [Star It ⭐!](https://github.com/omkarcloud/alibaba-scraper)
 
