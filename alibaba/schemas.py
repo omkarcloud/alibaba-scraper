@@ -59,6 +59,9 @@ class RegionField(StrippedString):
         parts = value.split(",")
         if len(parts) != 4 or not all(p.isdigit() for p in parts):
             raise ValidationError("Must be 'x1,x2,y1,y2' pixel coordinates.")
+        x1, x2, y1, y2 = (int(p) for p in parts)
+        if x1 >= x2 or y1 >= y2:
+            raise ValidationError("Must satisfy x1 < x2 and y1 < y2 ('x1,x2,y1,y2').")
         return value
 
 

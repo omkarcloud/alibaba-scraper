@@ -5,3 +5,6 @@ curl_cffi
 requests
 patchright
 Pillow
+psutil
+browserforge
+pyvirtualdisplay; sys_platform == "linux"

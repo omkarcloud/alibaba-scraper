@@ -132,7 +132,8 @@ def resolve_image_ref(value):
     if value.lower().startswith(("http://", "https://")):
         return value
     raise ValueError("image must be a public http(s) link to a JPEG/PNG photo, or the "
-                     "`image_path` a previous response returned (e.g. /icbuimgsearch/abc123.jpg)")
+                     "`image_path` a previous response returned "
+                     "(e.g. https://icbu-picture.oss-us-west-1.aliyuncs.com/icbuimgsearch/imageBase64_….jpeg)")
 
 
 def product_link(product_id):

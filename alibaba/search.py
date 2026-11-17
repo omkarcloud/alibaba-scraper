@@ -164,7 +164,7 @@ def _upload_image(image_url):
     import base64
     import io
 
-    from PIL import Image
+    from PIL import Image, ImageOps
 
     from alibaba.fetch import IMPERSONATE
 
@@ -189,9 +189,15 @@ def _upload_image(image_url):
     try:
         im = Image.open(io.BytesIO(body))
         im.load()
+        # The browser's <img> applies the EXIF orientation before the site
+        # draws it, so a phone photo lands upright; Pillow keeps the raw
+        # sensor frame unless told otherwise (and the regions the detector
+        # returns are in the uploaded frame).
+        im = ImageOps.exif_transpose(im) or im
     except Exception:
         raise ValueError("image_url must be a JPEG/PNG/WEBP image (it could not be decoded)")
-    # same canvas as the site: white background (transparent PNGs), longer side 500 px
+    # same canvas as the site: white background (transparent PNGs), longer
+    # side capped at 500 px (smaller photos are sent at their own size)
     canvas = Image.new("RGB", im.size, "white")
     im = im.convert("RGBA")
     canvas.paste(im, mask=im.split()[-1])
@@ -200,8 +206,10 @@ def _upload_image(image_url):
     canvas.save(buf, "JPEG", quality=80)
     data_url = "data:image/jpeg;base64," + base64.b64encode(buf.getvalue()).decode()
     payload = fetch_json(UPLOAD_URL, data={"pictureBase": data_url})
-    model = payload.get("model") if isinstance(payload, dict) else None
-    image_path = (model or {}).get("imagePath") or ""
+    if not isinstance(payload, dict):
+        raise AlibabaUpstreamError(f"image upload answered with {type(payload).__name__}, not an object")
+    model = payload.get("model")
+    image_path = model.get("imagePath") if isinstance(model, dict) else None
     if not payload.get("success") or not is_uploaded_image(image_path):
         raise AlibabaUpstreamError(f"image upload rejected: {str(payload)[:200]}")
     return image_path
@@ -227,9 +235,14 @@ def search_by_image(image, page=1, category_id=None, region=None):
     page = int(page or 1)
     if not 1 <= page <= IMAGE_MAX_PAGE:
         raise ValueError(f"page must be 1-{IMAGE_MAX_PAGE}")
-    if region is not None and not _REGION_RE.fullmatch(str(region)):
-        raise ValueError("region must be 'x1,x2,y1,y2' pixel coordinates of the uploaded image "
-                         "(the response's `regions` lists the detected ones)")
+    if region is not None:
+        if not _REGION_RE.fullmatch(str(region)):
+            raise ValueError("region must be 'x1,x2,y1,y2' pixel coordinates of the uploaded image "
+                             "(the response's `regions` lists the detected ones)")
+        # the site's own check before it crops: the box must have an area
+        x1, x2, y1, y2 = (int(p) for p in str(region).split(","))
+        if x1 >= x2 or y1 >= y2:
+            raise ValueError("region must satisfy x1 < x2 and y1 < y2 ('x1,x2,y1,y2')")
     image_path = resolve_image_ref(str(image or ""))
     if not is_uploaded_image(image_path):
         image_path = _upload_image(image_path)

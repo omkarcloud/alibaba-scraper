@@ -11,6 +11,7 @@ companyOverview modules carry the same company facts.
     python alibaba/supplier.py eptusbchina --reviews 1
 """
 import json
+import fastjson
 import os
 import re
 import sys
@@ -53,7 +54,7 @@ def store_modules(html):
         attrs = m.group(2) + m.group(4)
         name = _NAME_RE.search(attrs)
         try:
-            obj = json.loads(unquote(m.group(3)))
+            obj = fastjson.loads(unquote(m.group(3)))
         except ValueError:
             continue
         out.append({"module_name": name.group(1) if name else None,

@@ -1,7 +1,7 @@
-"""Alibaba.com transport. Plain curl_cffi for every open surface, one real
-Chrome (browser.py) ONLY for the surface that is fingerprint-gated.
+"""Alibaba.com transport. Plain curl_cffi for every open surface, a small
+patchright pool ONLY for the two surfaces that are fingerprint-gated.
 
-Validated 2026-09-14 (direct India egress and US residential proxy exits):
+Validated 2026-09-14 (direct India egress and proxy US exits):
 
 OPEN over plain curl_cffi (impersonate="chrome", no cookies, no browser):
   * /catalog/x_cid<id|0>?SearchText=..&page=..&<filters>  — keyword AND
@@ -35,20 +35,28 @@ OPEN over plain curl_cffi (impersonate="chrome", no cookies, no browser):
   sc_b_site=US with it — the product page then renders "Product Not
   Available".
 
-FINGERPRINT-GATED (one real Chrome, browser.py):
+FINGERPRINT-GATED (browser pool "alibaba", top-level navigation):
   * /trade/search?tab=supplier — supplier search (window._PAGE_DATA_).
     Every filter/sort param on /trade/search is gated the same way (and
     the catalog surface ignores tab=supplier), so this is the ONE surface
-    the browser serves. A real Chrome passes it cold; replaying its cookies
-    over curl_cffi is still punished (baxia keys on the TLS/JS fingerprint),
-    and even a same-origin in-page fetch() is punished. Only a top-level
-    NAVIGATION renders it, so browser.py navigates to the URL per request
-    (~3-5 s). Everything else never touches the browser.
+    the pool serves.
+  A real Chrome passes it cold; replaying its cookies over curl_cffi is
+  still punished (the browser mints no x5sec cookie — baxia keys on the TLS/
+  JS fingerprint, curl_cffi's chrome impersonation is not Chrome 152), and
+  even a same-origin in-page fetch() from a cleared page is punished. Only
+  a top-level NAVIGATION renders them. So these two are served by a warm
+  patchright pool (config.CHROME_POOLS["alibaba"], 1-2 drivers) that
+  navigates to the target URL per request (~3-5 s). Everything else never
+  touches the pool.
 
-Proxy policy: direct by default (config.ALIBABA_PROXY = None). With a
-rotating proxy set, every worker thread rebuilds its connection (= a new
-exit) on the first punish — the punish sticks to an IP for minutes, so
-retrying on the same exit is pointless.
+Proxy policy: never the pod's own IP (owner decision 2026-10-30). Every
+worker thread holds one sticky proxy exit — US datacenter by default
+(config.ALIBABA_EXIT / ALIBABA_EXIT_COUNTRY) — and rotates to a fresh one on
+the first punish or after ALIBABA_REQUESTS_PER_EXIT requests (sofascore
+pattern): the punish sticks to an IP for minutes, so retrying on the same
+exit is pointless, and on the pod's own IP there was nothing to rotate to
+(the 2026-10-26 burst of 29 x 502 on products/search). Pod probe 2026-10-30:
+catalog pages 1/3/8 and the product page 200 on 2/2 datacenter ports.
 
 Failure taxonomy:
   AlibabaUpstreamError  transport failure / 5xx — retryable
@@ -58,6 +66,7 @@ Failure taxonomy:
 """
 import hashlib
 import json
+import fastjson
 import os
 import re
 import sys
@@ -69,8 +78,12 @@ from urllib.parse import quote, urlencode
 # like under the server. Idempotent when imported normally.
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+import browser_client
 import config  # noqa: E402
+import egress  # noqa: E402
+from browser_client import BoxRefused, BoxUnavailable
 from scraper_errors import BadRequest, Blocked, NotFound, UpstreamError  # noqa: E402
+from scraper_utils import debug, sessions
 
 BASE = "https://www.alibaba.com"
 OPEN_S = "https://open-s.alibaba.com/openservice"
@@ -85,11 +98,11 @@ PUNISH_MARKERS = ("_____tmd_____", "<punish-component", "x5secdata")
 PAGE_HEADERS = {
     "accept": ("text/html,application/xhtml+xml,application/xml;q=0.9,"
                "image/avif,image/webp,*/*;q=0.8"),
-    "accept-language": "en-US,en;q=0.9",
+    "accept-language": egress.site_accept_language("alibaba"),
 }
 JSON_HEADERS = {
     "accept": "application/json, text/plain, */*",
-    "accept-language": "en-US,en;q=0.9",
+    "accept-language": egress.site_accept_language("alibaba"),
     "referer": f"{BASE}/",
     "origin": BASE,
 }
@@ -118,14 +131,7 @@ def looks_punished(text):
 
 def dump_debug(name, text):
     """Write raw response text to $ALIBABA_DEBUG_DIR/<name>.txt for post-mortems."""
-    dbg = os.environ.get("ALIBABA_DEBUG_DIR", "")
-    if dbg and text:
-        try:
-            os.makedirs(dbg, exist_ok=True)
-            with open(os.path.join(dbg, name + ".txt"), "w") as f:
-                f.write(text)
-        except OSError:
-            pass
+    debug.dump("ALIBABA_DEBUG_DIR", name, text)
 
 
 # ---- curl_cffi sessions (one per worker thread, one sticky exit each) -------
@@ -133,21 +139,20 @@ _local = threading.local()
 
 
 def _session():
-    """The thread's curl session. With a proxy configured the session holds
-    one exit and is rebuilt (= a fresh exit from a rotating provider) after
-    config.ALIBABA_REQUESTS_PER_EXIT requests or on the first punish."""
+    """The thread's curl session, bound to one sticky exit
+    (config.alibaba_proxy()) and rebuilt — a fresh exit — after
+    ALIBABA_REQUESTS_PER_EXIT requests or on the first punish."""
     sess = getattr(_local, "session", None)
     used = getattr(_local, "used", 0)
     limit = getattr(config, "ALIBABA_REQUESTS_PER_EXIT", 0) or 0
-    if sess is not None and limit and used >= limit and config.alibaba_proxy():
+    if sess is not None and limit and used >= limit:
         _drop_session()
         sess = None
     if sess is None:
         from curl_cffi import requests as curl_requests
         sess = curl_requests.Session(impersonate=IMPERSONATE)
         proxy = config.alibaba_proxy()
-        if proxy:
-            sess.proxies = {"http": proxy, "https": proxy}
+        sess.proxies = {"http": proxy, "https": proxy}
         _local.session = sess
         _local.used = 0
     _local.used = getattr(_local, "used", 0) + 1
@@ -159,11 +164,7 @@ def _drop_session():
     sess = getattr(_local, "session", None)
     _local.session = None
     _local.used = 0
-    if sess is not None:
-        try:
-            sess.close()
-        except Exception:
-            pass
+    sessions.close_quietly(sess)
 
 
 def _retrying(fn, retries=None):
@@ -333,50 +334,41 @@ def mtop(api, data, version="1.0"):
     return _retrying(lambda: _mtop_once(api, data, version))
 
 
-# ---- the one browser surface: supplier search --------------------------------
-# A real Chrome (browser.py) is primed on a plain keyword search page (mints
-# the session cookies), then navigates to the gated URL. Punish -> the
-# browser is retired and the next attempt launches a fresh one.
-WARM_SEED_URL = f"{BASE}/trade/search?SearchText=bluetooth+speaker"
+# ---- fingerprint-gated surfaces on the browser box ------------------------------
+# Supplier search (/trade/search?tab=supplier) only renders on a TOP-LEVEL
+# navigation in a real Chrome (validated 2026-09-14: curl and even a
+# same-origin in-page fetch are punished). Since 2026-10-21 that browser runs
+# on the Contabo browser box (recipes/alibaba.py, navigate mode): GKE sends
+# the URL and gets the DOM back. Sticky residential exits (ALIBABA_BROWSER_SLOTS
+# is the share; one exit until 2026-11-04) are offered as candidates so the box
+# reuses a warmed browser or opens another while it has headroom; the exit
+# the box used is rotated when it reports a punish (BoxRefused), which the
+# old pool handled by retiring the driver.
+_GATED_EXITS = browser_client.ExitPool(
+    "alibaba", lambda: config.residential_proxy(config.ALIBABA_POOL_PROXY_COUNTRY),
+    size=lambda: config.ALIBABA_BROWSER_SLOTS, burst=True)
 
 
 def fetch_gated_page(url, referer=None):
-    """Fetch one fingerprint-gated page (supplier search) with the real
-    browser; returns the HTML. Retries transport errors and punishes on a
-    fresh browser; BadRequest surfaces immediately."""
-    from browser import BROWSER, BrowserError
-
-    last = None
-    for attempt in range(1, config.MAX_RETRIES + 1):
+    """Fetch one fingerprint-gated page (supplier search) through the browser
+    box; returns the HTML. Punished -> rotate the exit and retry once, then
+    AlibabaBlocked; box down -> AlibabaUpstreamError; 400 -> AlibabaBadRequest."""
+    for attempt in (1, 2):
         try:
-            if not BROWSER.primed:
-                html, status = BROWSER.navigate(WARM_SEED_URL, referer="https://www.google.com/")
-                if looks_punished(html):
-                    dump_debug("punished_seed", html)
-                    raise AlibabaBlocked("alibaba punish page on the seed search (this IP is rate-limited; "
-                                         "wait a few minutes or set ALIBABA_PROXY)")
-                BROWSER.mark_primed()
-            html, status = BROWSER.navigate(url, referer=referer or f"{BASE}/")
-        except BrowserError as e:
-            last = AlibabaUpstreamError(f"browser failed: {e}")
-            BROWSER.retire()
-        except AlibabaUpstreamError as e:
-            last = e
-            BROWSER.retire()
-        else:
-            if status in (403, 429) or looks_punished(html):
-                dump_debug("punished_gated", html)
-                BROWSER.retire()
-                last = AlibabaBlocked(f"alibaba punish page (status={status}) for {url}")
-            elif status == 400:
-                raise AlibabaBadRequest(html[:200])
-            elif (status not in (None, 200)) or not html.strip():
-                last = AlibabaUpstreamError(f"HTTP {status} for {url}")
-            else:
-                return html
-        if attempt < config.MAX_RETRIES:
-            time.sleep(config.RETRY_BACKOFF * attempt)
-    raise last
+            _proxy, res = _GATED_EXITS.fetch_any("alibaba", url=url,
+                                                 headers={"referer": referer or f"{BASE}/"})
+        except BoxRefused as e:
+            _GATED_EXITS.rotate(e.proxy)
+            if attempt == 2:
+                raise AlibabaBlocked(f"gated page punished on the browser box: {e}")
+            continue
+        except BoxUnavailable as e:
+            raise AlibabaUpstreamError(f"browser box unavailable: {e}")
+        status = int(res.get("status") or 0)
+        text = res.get("body") or ""
+        if status == 400:
+            raise AlibabaBadRequest(text[:200])
+        return text
 
 
 # ---- helpers shared by the endpoint modules --------------------------------
@@ -404,13 +396,13 @@ def extract_blob(html, name):
     if raw.strip() in ("{}", ""):
         return None
     try:
-        return json.loads(raw)
+        return fastjson.loads(raw)
     except ValueError:
         # the blob may be followed by more statements before </script>
         end = _balanced_end(raw)
         if end:
             try:
-                return json.loads(raw[:end])
+                return fastjson.loads(raw[:end])
             except ValueError:
                 pass
         dump_debug(f"unparsable_{name}", html)

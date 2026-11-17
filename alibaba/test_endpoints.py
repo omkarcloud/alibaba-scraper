@@ -12,6 +12,7 @@ import pytest
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from alibaba import refs, schemas, search, product, supplier, discovery, fetch  # noqa: E402
+from scraper_utils.testing import hosted_only
 
 FX = os.path.join(os.path.dirname(os.path.abspath(__file__)), "fixtures")
 
@@ -241,7 +242,12 @@ def test_categories_children_accepts_link(monkeypatch):
 # ---- route shaping (bottle app, no network) ---------------------------------
 
 def test_route_pagination_links(monkeypatch):
-    import routes  # noqa: F401  (mounts the routes on bottle's default app)
+    os.environ["ONLY_SCRAPER"] = "alibaba"
+    import importlib
+    import config
+    importlib.reload(config)
+    import routes
+    importlib.reload(routes)
     from bottle import default_app
     _stub_page(monkeypatch, "__page__data_sse10._offer_list", "catalog_search_bluetooth_filtered.json", [])
     app = default_app()
@@ -295,9 +301,186 @@ def test_image_search_flow(monkeypatch):
     monkeypatch.setattr(search, "_upload_image", lambda url: pytest.fail("must not upload"))
     r = search.search_by_image("/icbuimgsearch/abc123.jpg", page=1)
     assert r["image_path"] == "/icbuimgsearch/abc123.jpg"
+    # ... and so does the full OSS URL responses return now, in any bucket region
+    for oss in ("https://icbu-picture.oss-us-west-1.aliyuncs.com/icbuimgsearch/imageBase64_ab12.jpeg",
+                "https://icbu-picture-sh.oss-cn-shanghai.aliyuncs.com/icbuimgsearch/imageBase64_cd34.jpeg"):
+        assert search.search_by_image(oss, page=2)["image_path"] == oss
+    assert refs.is_uploaded_image("https://example.com/icbuimgsearch/x.jpg") is False
     for bad in ({"image": "https://example.com/p.jpg", "region": "1,2"}, {"image": "ftp://x/a.jpg"}, {"image": ""}):
         with pytest.raises(ValueError):
             search.search_by_image(**bad)
     data, err = schemas.load_query(schemas.ImageSearchSchema, {"image": "/icbuimgsearch/abc123.jpg", "region": "1, 2,3,4",
                                                               "category": "https://www.alibaba.com/catalog/x_cid44"})
     assert err is None and data["region"] == "1,2,3,4" and data["category_id"] == 44
+
+
+def test_upload_image_posts_the_search_bar_canvas(monkeypatch):
+    import base64
+    import io
+    import curl_cffi.requests as curl_requests
+    from PIL import Image
+
+    src = Image.new("RGBA", (1200, 600), (255, 0, 0, 0))           # transparent, wider than tall
+    buf = io.BytesIO(); src.save(buf, "PNG")
+
+    class Resp:
+        status_code = 200
+        headers = {"content-type": "image/png"}
+        content = buf.getvalue()
+    monkeypatch.setattr(curl_requests, "get", lambda *a, **k: Resp())
+    posted = []
+
+    def fake_fetch_json(url, params=None, data=None):
+        posted.append((url, data))
+        return {"success": True, "model": {"imagePath": "https://icbu-picture.oss-us-west-1.aliyuncs.com"
+                                           "/icbuimgsearch/imageBase64_ab12.jpeg", "regions": ["0,499,0,249"]}}
+    monkeypatch.setattr(search, "fetch_json", fake_fetch_json)
+    assert search._upload_image("https://example.com/p.png") == \
+        "https://icbu-picture.oss-us-west-1.aliyuncs.com/icbuimgsearch/imageBase64_ab12.jpeg"
+    url, data = posted[0]
+    assert url == "https://www.alibaba.com/search/api/imageTextSearchRegions"
+    head, b64 = data["pictureBase"].split(",", 1)
+    assert head == "data:image/jpeg;base64"
+    sent = Image.open(io.BytesIO(base64.b64decode(b64)))
+    assert sent.format == "JPEG" and sent.size == (500, 250)          # longer side 500, aspect kept
+    assert sent.getpixel((10, 10))[0] > 240                          # transparency drawn on white
+    # a refusal (no imagePath) is an upstream error, not a silent empty search
+    monkeypatch.setattr(search, "fetch_json", lambda *a, **k: {"success": False, "msgCode": "X"})
+    with pytest.raises(fetch.AlibabaUpstreamError):
+        search._upload_image("https://example.com/p.png")
+    # ... and so is a non-object body or a `model` that is not an object
+    for body in ([], "oops", {"success": True, "model": "x"}, {"success": True, "model": {"imagePath": "/etc/passwd"}}):
+        monkeypatch.setattr(search, "fetch_json", lambda *a, _b=body, **k: _b)
+        with pytest.raises(fetch.AlibabaUpstreamError):
+            search._upload_image("https://example.com/p.png")
+
+
+def test_upload_image_applies_exif_orientation(monkeypatch):
+    """The browser draws a phone photo upright (EXIF orientation applied),
+    so the uploaded frame — and the regions the detector returns — must be
+    the rotated one, not the raw sensor frame."""
+    import base64
+    import io
+    import curl_cffi.requests as curl_requests
+    from PIL import Image
+
+    src = Image.new("RGB", (1000, 400), "blue")                       # stored landscape ...
+    exif = Image.Exif(); exif[0x0112] = 6                             # ... tagged "rotate 90° CW"
+    buf = io.BytesIO(); src.save(buf, "JPEG", exif=exif.tobytes())
+
+    class Resp:
+        status_code = 200
+        headers = {"content-type": "image/jpeg"}
+        content = buf.getvalue()
+    monkeypatch.setattr(curl_requests, "get", lambda *a, **k: Resp())
+    posted = []
+
+    def fake_fetch_json(url, params=None, data=None):
+        posted.append(data)
+        return {"success": True, "model": {"imagePath": "https://icbu-picture.oss-us-west-1.aliyuncs.com"
+                                           "/icbuimgsearch/imageBase64_ef56.jpeg", "regions": []}}
+    monkeypatch.setattr(search, "fetch_json", fake_fetch_json)
+    search._upload_image("https://example.com/phone.jpg")
+    sent = Image.open(io.BytesIO(base64.b64decode(posted[0]["pictureBase"].split(",", 1)[1])))
+    assert sent.size == (200, 500)                                    # portrait after the transpose
+
+
+def test_image_region_must_have_an_area(monkeypatch):
+    monkeypatch.setattr(search, "_upload_image", lambda url: pytest.fail("must not upload"))
+    monkeypatch.setattr(search, "fetch_json", lambda *a, **k: pytest.fail("must not search"))
+    for bad in ("5,5,0,9", "9,1,0,9", "0,9,7,7", "0,9,8,2"):
+        with pytest.raises(ValueError):
+            search.search_by_image("/icbuimgsearch/abc123.jpg", region=bad)
+        _, err = schemas.load_query(schemas.ImageSearchSchema, {"image": "/icbuimgsearch/abc123.jpg", "region": bad})
+        assert err and "region" in err["errors"]
+    data, err = schemas.load_query(schemas.ImageSearchSchema, {"image": "/icbuimgsearch/abc123.jpg", "region": "0,498,172,500"})
+    assert err is None and data["region"] == "0,498,172,500"
+
+
+def test_image_regions_negative_coordinates_are_clamped():
+    from alibaba import parsers
+    out = parsers.parse_image_search_page({"regions": ["-1,498,172,500", "0,499,0,499"],
+                                           "selectRegion": "-3,10,0,9", "offers": []}, 1)
+    assert out["regions"] == ["0,498,172,500", "0,499,0,499"] and out["selected_region"] == "0,10,0,9"
+
+
+# ---- exits: always a proxy, a fresh one after a punish ---------------------------
+
+def test_sessions_always_leave_through_an_exit_and_a_punish_rotates_it(monkeypatch):
+    import curl_cffi.requests as curl_requests
+
+    class FakeSession:
+        def __init__(self, impersonate=None):
+            self.proxies = {}
+
+        def close(self):
+            pass
+
+    ports = iter(range(10001, 10010))
+    monkeypatch.setattr(curl_requests, "Session", FakeSession)
+    monkeypatch.setattr(fetch.config, "alibaba_proxy", lambda: f"http://dc:x@gw:{next(ports)}")
+    monkeypatch.setattr(fetch.config, "MAX_RETRIES", 2)
+    monkeypatch.setattr(fetch.config, "RETRY_BACKOFF", 0)
+    monkeypatch.setattr(fetch.config, "ALIBABA_REQUESTS_PER_EXIT", 3)
+    fetch._drop_session()
+    first = fetch._session()
+    assert first.proxies == {"http": "http://dc:x@gw:10001", "https": "http://dc:x@gw:10001"}
+    assert fetch._session() is first                                 # sticky within the budget
+
+    seen = []
+
+    def punished():
+        seen.append(fetch._session().proxies["https"])
+        raise fetch.AlibabaBlocked("alibaba punish page")
+    with pytest.raises(fetch.AlibabaBlocked):
+        fetch._retrying(punished)
+    assert seen == ["http://dc:x@gw:10001", "http://dc:x@gw:10002"]   # the retry left on a fresh exit
+    # the per-exit request budget rotates too
+    fetch._drop_session()
+    s = fetch._session(); fetch._session(); fetch._session()
+    assert fetch._session() is not s
+    fetch._drop_session()
+
+
+# ---- the gated-page exit pool (fetch.fetch_gated_page) -----------------------------------
+
+@hosted_only
+def test_gated_pages_spread_over_sticky_exits_and_a_punish_rotates_that_exit(monkeypatch):
+    import itertools
+    import browser_client
+    import config
+    ports = itertools.count(20001)
+    monkeypatch.setattr(config, "residential_proxy", lambda country, states=None: f"http://u:p@gw:{next(ports)}")
+    monkeypatch.setattr(config, "ALIBABA_BROWSER_SLOTS", 2)
+    monkeypatch.setattr(config, "BROWSER_BURST_FACTOR", 1)
+    fetch._GATED_EXITS.reset()
+    busy, log, answers = set(), [], []
+
+    def fetch_any(site, candidates, **kw):
+        index = next(i for i in range(len(candidates)) if i not in busy)
+        log.append((candidates[index][0], [c[0] for c in candidates]))
+        if answers:
+            e = answers.pop(0); e.candidate = index
+            raise e
+        return index, {"status": 200, "headers": {}, "body": "<html>suppliers</html>", "final_url": kw.get("url")}
+    monkeypatch.setattr(browser_client, "fetch_any", fetch_any)
+    assert fetch.fetch_gated_page("https://www.alibaba.com/trade/search?tab=supplier&SearchText=a") == "<html>suppliers</html>"
+    busy.add(0)
+    fetch.fetch_gated_page("https://www.alibaba.com/trade/search?tab=supplier&SearchText=b")
+    busy.clear()
+    fetch.fetch_gated_page("https://www.alibaba.com/trade/search?tab=supplier&SearchText=c")
+    assert [p for p, _ in log] == ["http://u:p@gw:20001", "http://u:p@gw:20002", "http://u:p@gw:20001"]
+    assert log[-1][1] == ["http://u:p@gw:20001", "http://u:p@gw:20002"]
+    # punished once: the exit the box used is rotated and the call retried on the pool
+    answers.append(browser_client.BoxRefused("alibaba/fetch: 502 recipe punished"))
+    assert fetch.fetch_gated_page("https://www.alibaba.com/trade/search?tab=supplier&SearchText=d") == "<html>suppliers</html>"
+    assert fetch._GATED_EXITS.current() == ["http://u:p@gw:20003", "http://u:p@gw:20002"]
+    assert [p for p, _ in log][-2:] == ["http://u:p@gw:20001", "http://u:p@gw:20003"]
+    # punished twice in a row: blocked
+    answers.extend([browser_client.BoxRefused("p1"), browser_client.BoxRefused("p2")])
+    with pytest.raises(fetch.AlibabaBlocked):
+        fetch.fetch_gated_page("https://www.alibaba.com/trade/search?tab=supplier&SearchText=e")
+    monkeypatch.setattr(config, "BROWSER_BURST_FACTOR", 4)
+    fetch.fetch_gated_page("https://www.alibaba.com/trade/search?tab=supplier&SearchText=f")
+    assert len(log[-1][1]) == 8                                # share x the default factor
+    fetch._GATED_EXITS.reset()

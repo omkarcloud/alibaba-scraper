@@ -1,7 +1,7 @@
 @baseUrl = http://127.0.0.1:6002
 # @baseUrl = https://alibaba-scraper.omkar.cloud
 
-# Every value below returned a 200 with data on 2026-10-30 (local service).
+# Every value below returned a 200 with data on 2026-10-30 (local service, US datacenter exits).
 # derive_facts.py reads the FIRST request per path as the proven example.
 
 ### Search Products
